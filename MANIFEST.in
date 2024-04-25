@@ -2,3 +2,4 @@ include requirements.txt
 include pyrnnoise/*.dll
 include pyrnnoise/*.dylib
 include pyrnnoise/*.so
+include VERSION

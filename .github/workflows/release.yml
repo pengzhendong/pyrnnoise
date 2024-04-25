@@ -3,38 +3,17 @@ name: Create Release
 on:
   workflow_dispatch:
     inputs:
-      tag:
-        description: "Tag for the release (e.g. 0.0.1)"
+      version:
+        description: "Build version (e.g. 0.0.1)"
         required: true
 
 jobs:
   build:
-    name: ${{ matrix.config.name }}
-    runs-on: ${{ matrix.config.os }}
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        config:
-          # - {
-          #     name: Windows Latest MSVC,
-          #     os: windows-latest,
-          #     cc: cl,
-          #     cxx: cl,
-          #     artifact_prefix: win,
-          #   }
-          # - {
-          #     name: macOS Latest Clang,
-          #     os: macos-latest,
-          #     cc: clang,
-          #     cxx: clang++,
-          #     artifact_prefix: macos,
-          #   }
-          - {
-              name: Ubuntu Latest GCC,
-              os: ubuntu-latest,
-              cc: gcc,
-              cxx: g++,
-              artifact_prefix: linux,
-            }
+        os: [macos-latest, ubuntu-latest]
 
     steps:
       - uses: actions/checkout@v3
@@ -44,18 +23,15 @@ jobs:
       - name: Build
         run: |
           cmake -B ${{runner.workspace}}/build -DCMAKE_BUILD_TYPE=Release
-          cmake --build ${{runner.workspace}}/build --target install --parallel
+          cmake --build ${{runner.workspace}}/build --target install --parallel --config Release
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: ${{ matrix.config.artifact_prefix }}-pyrnnoise
-          path: |
-            ${{runner.workspace}}/pyrnnoise
-
-  # publish:
-  #   needs: build
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Download artifacts
-  #       uses: actions/download-artifact@v3
+      - name: Publish
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          echo ${{ inputs.version }} > VERSION
+          python -m pip install -U setuptools wheel
+          python setup.py bdist_wheel
+          python -m pip install -U twine
+          python -m twine upload dist/*

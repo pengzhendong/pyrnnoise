@@ -12,10 +12,7 @@ from pyrnnoise import RNNoise
 @click.option("--plot/--no-plot", default=False, help="Plot the vad probabilities")
 def main(in_wav, out_wav, plot):
     denoiser = RNNoise()
-
-    vad_probs = []
-    for vad_prob in denoiser.process_wav(in_wav, out_wav):
-        vad_probs.append(vad_prob)
+    vad_probs = list(denoiser.process_wav(in_wav, out_wav))
 
     if plot:
         wav, sr = sf.read(in_wav)
