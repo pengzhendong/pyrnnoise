@@ -20,6 +20,7 @@ import wave
 
 import numpy as np
 import soxr
+from tqdm import tqdm
 
 
 if platform.system() == "Darwin":
@@ -78,6 +79,8 @@ class RNNoise:
                 out_rs = soxr.ResampleStream(48000, sr, 1, dtype=np.int16)
 
             frame_size = sr * self.frame_size // 48000
+            n_frames = in_wav.getnframes() // frame_size
+            progress_bar = tqdm(total=n_frames, desc="Denoising audio", unit="frames")
             while True:
                 frame = in_wav.readframes(frame_size)
                 if not frame:
@@ -90,4 +93,5 @@ class RNNoise:
                 if sr != 48000:
                     frame = out_rs.resample_chunk(frame)
                 out_wav.writeframes(frame)
+                progress_bar.update(1)
                 yield speech_prob
