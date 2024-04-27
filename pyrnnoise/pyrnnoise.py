@@ -15,12 +15,13 @@
 import ctypes
 import os
 import platform
-import warnings
 import wave
 
 import numpy as np
 import soxr
 from tqdm import tqdm
+
+from .frame_queue import FrameQueue
 
 
 if platform.system() == "Darwin":
@@ -47,51 +48,40 @@ lib.rnnoise_process_frame.restype = ctypes.c_float
 
 
 class RNNoise:
-    def __init__(self):
+    def __init__(self, sample_rate):
         self.denoise_state = lib.rnnoise_create(None)
-        self.frame_size = lib.rnnoise_get_frame_size()
+        self.frame_size_samples = lib.rnnoise_get_frame_size()
+        self.queue = FrameQueue(self.frame_size_samples, sample_rate)
 
     def __del__(self):
         lib.rnnoise_destroy(self.denoise_state)
 
-    def process_frame(self, frame):
-        if frame.shape[0] != self.frame_size:
-            warnings.warn(
-                f"The current frame size {frame.shape[0]} is less than {self.frame_size}."
-                "If it is the last frame, please pad 0."
-            )
-        data = frame.astype(np.float32)
-        in_ptr = data.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
-        vad_prob = lib.rnnoise_process_frame(self.denoise_state, in_ptr, in_ptr)
-        return vad_prob, data.astype(np.int16)
+    def process_chunk(self, chunk):
+        for frame in self.queue.add_chunk(chunk):
+            data = frame.astype(np.float32)
+            in_ptr = data.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
+            vad_prob = lib.rnnoise_process_frame(self.denoise_state, in_ptr, in_ptr)
+            yield vad_prob, data.astype(np.int16)
 
     def process_wav(self, in_path, out_path):
         with wave.open(in_path) as in_wav, wave.open(out_path, "w") as out_wav:
+            sr = in_wav.getframerate()
             assert in_wav.getnchannels() == 1
             assert in_wav.getsampwidth() == 2
             out_wav.setnchannels(1)
             out_wav.setsampwidth(2)
-
-            sr = in_wav.getframerate()
             out_wav.setframerate(sr)
-            if sr != 48000:
-                in_rs = soxr.ResampleStream(sr, 48000, 1, dtype=np.int16)
-                out_rs = soxr.ResampleStream(48000, sr, 1, dtype=np.int16)
 
-            frame_size = sr * self.frame_size // 48000
-            n_frames = in_wav.getnframes() // frame_size
-            progress_bar = tqdm(total=n_frames, desc="Denoising audio", unit="frames")
+            # chunk_size_samples = self.frame_size_samples
+            chunk_size_samples = 30 * sr // 1000
+            n_frames = in_wav.getnframes() // self.frame_size_samples
+            progress_bar = tqdm(total=n_frames, desc="Denoising audio", unit="chunks", bar_format="{l_bar}{bar}{r_bar} | {percentage:.2f}%")
             while True:
-                frame = in_wav.readframes(frame_size)
-                if not frame:
+                chunk = in_wav.readframes(chunk_size_samples)
+                if not chunk:
                     break
-                frame = np.frombuffer(frame, dtype=np.int16)
-                if sr != 48000:
-                    frame = in_rs.resample_chunk(frame)
-                frame = np.pad(frame, (0, self.frame_size - frame.shape[0]))
-                speech_prob, frame = self.process_frame(frame)
-                if sr != 48000:
-                    frame = out_rs.resample_chunk(frame)
-                out_wav.writeframes(frame)
-                progress_bar.update(1)
-                yield speech_prob
+                chunk = np.frombuffer(chunk, dtype=np.int16)
+                for speech_prob, frame in self.process_chunk(chunk):
+                    out_wav.writeframes(frame)
+                    progress_bar.update(1)
+                    yield speech_prob
