@@ -51,7 +51,12 @@ class RNNoise:
     def __init__(self, sample_rate):
         self.denoise_state = lib.rnnoise_create(None)
         self.frame_size_samples = lib.rnnoise_get_frame_size()
+        self.frame_size_ms = self.frame_size_samples * 1000 // sample_rate
+
         self.queue = FrameQueue(self.frame_size_samples, sample_rate)
+        if sample_rate != 48000:
+            self.rs = soxr.ResampleStream(48000, sample_rate, 1, dtype=np.int16)
+        self.sample_rate = sample_rate
 
     def __del__(self):
         lib.rnnoise_destroy(self.denoise_state)
@@ -61,7 +66,10 @@ class RNNoise:
             data = frame.astype(np.float32)
             in_ptr = data.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
             vad_prob = lib.rnnoise_process_frame(self.denoise_state, in_ptr, in_ptr)
-            yield vad_prob, data.astype(np.int16)
+            frame = data.astype(np.int16)
+            if self.sample_rate != 48000:
+                frame = self.rs.resample_chunk(frame)
+            yield vad_prob, frame
 
     def process_wav(self, in_path, out_path):
         with wave.open(in_path) as in_wav, wave.open(out_path, "w") as out_wav:
@@ -72,15 +80,20 @@ class RNNoise:
             out_wav.setsampwidth(2)
             out_wav.setframerate(sr)
 
-            # chunk_size_samples = self.frame_size_samples
-            chunk_size_samples = 30 * sr // 1000
-            n_frames = in_wav.getnframes() // self.frame_size_samples
-            progress_bar = tqdm(total=n_frames, desc="Denoising audio", unit="chunks", bar_format="{l_bar}{bar}{r_bar} | {percentage:.2f}%")
+            n_frames = in_wav.getnframes() * 1000 / sr // self.frame_size_ms
+            chunk_size_samples = self.frame_size_samples
+            progress_bar = tqdm(
+                total=n_frames,
+                desc="Denoising audio",
+                unit="frames",
+                bar_format="{l_bar}{bar}{r_bar} | {percentage:.2f}%",
+            )
             while True:
                 chunk = in_wav.readframes(chunk_size_samples)
                 if not chunk:
                     break
                 chunk = np.frombuffer(chunk, dtype=np.int16)
+
                 for speech_prob, frame in self.process_chunk(chunk):
                     out_wav.writeframes(frame)
                     progress_bar.update(1)
