@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.14)
 project("RnNoise" LANGUAGES C)
 
 option(RTCD "Enable x86 run-time CPU detection" OFF)
+option(BUILD_BIN "Build rnnoise_demo binary" OFF)
 
 file(STRINGS "rnnoise/model_version" VERSION LIMIT_COUNT 1)
 set(MODEL "rnnoise_data-${VERSION}.tar.gz")
@@ -26,7 +27,10 @@ set(RNNOISE_SOURCES
 )
 
 if(RTCD)
+  add_compile_definitions(CPU_INFO_BY_ASM)
   add_compile_definitions(RNN_ENABLE_X86_RTCD)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mavx -mfma -mavx2")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse4.1")
   list(APPEND RNNOISE_SOURCES
     rnnoise/src/x86/x86cpu.c
     rnnoise/src/x86/x86_dnn_map.c
@@ -37,3 +41,8 @@ endif()
 
 add_library(rnnoise SHARED ${RNNOISE_SOURCES})
 install(TARGETS rnnoise LIBRARY DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/pyrnnoise)
+
+if(BUILD_BIN)
+  add_executable(rnnoise_demo rnnoise/examples/rnnoise_demo.c)
+  target_link_libraries(rnnoise_demo PRIVATE rnnoise)
+endif()

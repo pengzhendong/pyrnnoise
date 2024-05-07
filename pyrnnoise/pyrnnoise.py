@@ -33,7 +33,7 @@ elif platform.system() == "Linux":
 else:
     raise OSError("Unsupported operating system")
 if not os.path.exists(LIBRNNOISE):
-    raise OSError(f"RNNoise library not found: {LIBRNNOISE}")
+    raise OSError(f"RnNoise library not found: {LIBRNNOISE}")
 lib = ctypes.CDLL(LIBRNNOISE)
 lib.rnnoise_create.argtypes = [ctypes.c_void_p]
 lib.rnnoise_destroy.argtypes = [ctypes.c_void_p]

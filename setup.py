@@ -39,7 +39,7 @@ setup(
     author_email="pzd17@tsinghua.org.cn",
     long_description=open("README.md", encoding="utf8").read(),
     long_description_content_type="text/markdown",
-    description="PyRNNoise",
+    description="PyRnNoise",
     url="https://github.com/pengzhendong/pyrnnoise",
     packages=find_packages(),
     include_package_data=True,
