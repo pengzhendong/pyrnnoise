@@ -39,8 +39,18 @@ if(RTCD)
   )
 endif()
 
+if(MSVC)
+  add_compile_definitions(DLL_EXPORT)
+  add_compile_definitions(RNNOISE_BUILD)
+endif()
+
 add_library(rnnoise SHARED ${RNNOISE_SOURCES})
-install(TARGETS rnnoise LIBRARY DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/pyrnnoise)
+set(PYRNNOISE ${CMAKE_CURRENT_SOURCE_DIR}/pyrnnoise)
+install(TARGETS
+  rnnoise
+  LIBRARY DESTINATION ${PYRNNOISE}
+  RUNTIME DESTINATION ${PYRNNOISE}
+)
 
 if(BUILD_BIN)
   add_executable(rnnoise_demo rnnoise/examples/rnnoise_demo.c)

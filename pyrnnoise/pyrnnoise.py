@@ -27,7 +27,7 @@ from .frame_queue import FrameQueue
 if platform.system() == "Darwin":
     LIBRNNOISE = os.path.join(os.path.dirname(__file__), "librnnoise.dylib")
 elif platform.system() == "Windows":
-    LIBRNNOISE = os.path.join(os.path.dirname(__file__), "librnnoise.dll")
+    LIBRNNOISE = os.path.join(os.path.dirname(__file__), "rnnoise.dll")
 elif platform.system() == "Linux":
     LIBRNNOISE = os.path.join(os.path.dirname(__file__), "librnnoise.so")
 else:
