@@ -69,11 +69,11 @@ class RNNoise:
         for i in range(self.channels):
             state = self.denoise_states[i]
             # scale the frame to the range of int16, but in float32
-            data = (frame[:, i] * 32767).astype(np.float32)
+            data = (frame[:, i] * 32768).astype(np.float32)
             in_ptr = data.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
             speech_probs[:, i] = lib.rnnoise_process_frame(state, in_ptr, in_ptr)
             # scale the denoised frame back to the range of [-1.0, 1.0]
-            denoised_frame[:, i] = data.astype(np.int16)[:frame_size] / 32767.0
+            denoised_frame[:, i] = data.astype(np.int16)[:frame_size] / 32768
         if self.sample_rate != 48000:
             last = len(frame) > frame_size
             denoised_frame = self.rs.resample_chunk(denoised_frame, last)
