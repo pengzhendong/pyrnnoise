@@ -102,11 +102,16 @@ class RNNoise:
         )
         if block_size is None:
             block_size = 10 * sr // 1000
+        blocks = sf.blocks(in_path, blocksize=block_size)
+
         with sf.SoundFile(
             out_path, "w", samplerate=sr, channels=channels, subtype=subtype
         ) as out_wav:
-            for block in sf.blocks(in_path, blocksize=block_size):
-                last = len(block) < block_size
+            next_block = next(blocks, None)
+            while next_block is not None:
+                block = next_block
+                next_block = next(blocks, None)
+                last = next_block is None
                 for speech_prob, frame in self.process_chunk(block, last):
                     out_wav.write(frame)
                     progress_bar.update(1)

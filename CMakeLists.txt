@@ -7,7 +7,7 @@ option(BUILD_BIN "Build rnnoise_demo binary" OFF)
 file(STRINGS "rnnoise/model_version" VERSION LIMIT_COUNT 1)
 set(MODEL "rnnoise_data-${VERSION}.tar.gz")
 execute_process(
-  COMMAND wget -c -N --progress=bar:force https://media.xiph.org/rnnoise/models/${MODEL}
+  COMMAND wget -c -N --progress=bar:force https://modelscope.cn/models/pengzhendong/rnnoise/resolve/master/${MODEL}
   WORKING_DIRECTORY rnnoise
 )
 execute_process(COMMAND tar xvomf ${MODEL} WORKING_DIRECTORY rnnoise)
