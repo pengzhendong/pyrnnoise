@@ -28,14 +28,10 @@ class FrameQueue:
         if self.sample_rate != 48000:
             chunk = self.rs.resample_chunk(chunk, last)
         self.remained_samples = np.concatenate((self.remained_samples, chunk))
-        while len(self.remained_samples) >= self.frame_size_samples:
+        while len(self.remained_samples) > self.frame_size_samples:
             frame = self.remained_samples[: self.frame_size_samples]
             self.remained_samples = self.remained_samples[len(frame) :]
-            yield frame, len(frame)
+            yield frame, False
 
         if last and len(self.remained_samples) > 0:
-            frame = self.remained_samples
-            pad_frame = np.pad(
-                frame, ((0, self.frame_size_samples - len(frame)), (0, 0))
-            )
-            yield pad_frame, len(frame)
+            yield self.remained_samples, True
