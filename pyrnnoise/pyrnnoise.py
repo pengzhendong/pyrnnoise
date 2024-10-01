@@ -58,7 +58,9 @@ class RNNoise:
         self.sample_rate = sample_rate
         if self.sample_rate != 48000:
             self.rs = soxr.ResampleStream(48000, self.sample_rate, self.channels)
-        self.queue = FrameQueue(self.frame_size_samples, self.sample_rate, self.channels)
+        self.queue = FrameQueue(
+            self.frame_size_samples, self.sample_rate, self.channels
+        )
 
     def __del__(self):
         for denoise_state in self.denoise_states:
@@ -67,7 +69,9 @@ class RNNoise:
     def reset(self):
         if self.sample_rate != 48000:
             self.rs = soxr.ResampleStream(48000, self.sample_rate, self.channels)
-        self.queue = FrameQueue(self.frame_size_samples, self.sample_rate, self.channels)
+        self.queue = FrameQueue(
+            self.frame_size_samples, self.sample_rate, self.channels
+        )
 
     def process_frame(self, frame, last):
         frame_size = len(frame)
@@ -84,7 +88,9 @@ class RNNoise:
             # scale the denoised frame back to the range of [-1.0, 1.0]
             denoised_frame[:, i] = data.astype(np.int16)[:frame_size] / 32768
         if self.sample_rate != 48000:
-            denoised_frame = self.rs.resample_chunk(denoised_frame, last)
+            denoised_frame = self.rs.resample_chunk(
+                denoised_frame.astype(np.float32), last
+            )
         return speech_probs, denoised_frame
 
     def process_chunk(self, chunk, last=False):

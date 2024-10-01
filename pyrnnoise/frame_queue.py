@@ -26,7 +26,7 @@ class FrameQueue:
 
     def add_chunk(self, chunk, last=False):
         if self.sample_rate != 48000:
-            chunk = self.rs.resample_chunk(chunk, last)
+            chunk = self.rs.resample_chunk(chunk.astype(np.float32), last)
         self.remained_samples = np.concatenate((self.remained_samples, chunk))
         while len(self.remained_samples) > self.frame_size_samples:
             frame = self.remained_samples[: self.frame_size_samples]
