@@ -75,8 +75,8 @@ class RNNoise:
 
     def process_frame(self, frame, last):
         frame_size = len(frame)
-        speech_probs = np.empty((1, self.channels))
-        denoised_frame = np.empty((frame_size, self.channels))
+        speech_probs = np.empty((1, self.channels), dtype=np.float32)
+        denoised_frame = np.empty((frame_size, self.channels), dtype=np.float32)
         if frame_size < self.frame_size_samples:
             frame = np.pad(frame, ((0, self.frame_size_samples - frame_size), (0, 0)))
         for i in range(self.channels):
@@ -88,9 +88,7 @@ class RNNoise:
             # scale the denoised frame back to the range of [-1.0, 1.0]
             denoised_frame[:, i] = data.astype(np.int16)[:frame_size] / 32768
         if self.sample_rate != 48000:
-            denoised_frame = self.rs.resample_chunk(
-                denoised_frame.astype(np.float32), last
-            )
+            denoised_frame = self.rs.resample_chunk(denoised_frame, last)
         return speech_probs, denoised_frame
 
     def process_chunk(self, chunk, last=False):
@@ -119,12 +117,10 @@ class RNNoise:
         blocks = sf.blocks(in_path, blocksize=block_size)
 
         self.reset()
-        with sf.SoundFile(
-            out_path, "w", samplerate=sr, channels=channels, subtype=subtype
-        ) as out_wav:
+        with sf.SoundFile(out_path, "w", sr, channels, subtype) as out_wav:
             next_block = next(blocks, None)
             while next_block is not None:
-                block = next_block
+                block = next_block.astype(np.float32)
                 next_block = next(blocks, None)
                 last = next_block is None
                 for speech_prob, frame in self.process_chunk(block, last):

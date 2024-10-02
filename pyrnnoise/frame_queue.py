@@ -19,14 +19,14 @@ import soxr
 class FrameQueue:
     def __init__(self, frame_size_samples, sample_rate, channels):
         self.frame_size_samples = frame_size_samples
-        self.remained_samples = np.empty((0, channels))
+        self.remained_samples = np.empty((0, channels), dtype=np.float32)
         if sample_rate != 48000:
             self.rs = soxr.ResampleStream(sample_rate, 48000, channels)
         self.sample_rate = sample_rate
 
     def add_chunk(self, chunk, last=False):
         if self.sample_rate != 48000:
-            chunk = self.rs.resample_chunk(chunk.astype(np.float32), last)
+            chunk = self.rs.resample_chunk(chunk, last)
         self.remained_samples = np.concatenate((self.remained_samples, chunk))
         while len(self.remained_samples) > self.frame_size_samples:
             frame = self.remained_samples[: self.frame_size_samples]
