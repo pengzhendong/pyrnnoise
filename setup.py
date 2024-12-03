@@ -19,6 +19,7 @@ from wheel.bdist_wheel import bdist_wheel
 with open("requirements.txt", encoding="utf8") as f:
     requirements = f.readlines()
 
+
 class custom_bdist_wheel(bdist_wheel):
     def finalize_options(self):
         bdist_wheel.finalize_options(self)
@@ -31,6 +32,7 @@ class custom_bdist_wheel(bdist_wheel):
         elif plat == "linux_i686":
             plat = "manylinux1_i686"
         return "py3", "none", plat
+
 
 setup(
     name="pyrnnoise",
