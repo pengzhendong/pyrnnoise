@@ -35,6 +35,8 @@ jobs:
           TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
         run: |
           echo ${{ inputs.version }} > VERSION
+          python -m venv .venv
+          source .venv/bin/activate
           python -m pip install -U setuptools wheel
           python setup.py bdist_wheel
           python -m pip install -U twine

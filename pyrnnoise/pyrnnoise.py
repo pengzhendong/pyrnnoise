@@ -24,7 +24,6 @@ from tqdm import tqdm
 
 from .frame_queue import FrameQueue
 
-
 if platform.system() == "Darwin":
     LIBRNNOISE = os.path.join(os.path.dirname(__file__), "librnnoise.dylib")
 elif platform.system() == "Windows":
@@ -58,9 +57,7 @@ class RNNoise:
         self.sample_rate = sample_rate
         if self.sample_rate != 48000:
             self.rs = soxr.ResampleStream(48000, self.sample_rate, self.channels)
-        self.queue = FrameQueue(
-            self.frame_size_samples, self.sample_rate, self.channels
-        )
+        self.queue = FrameQueue(self.frame_size_samples, self.sample_rate, self.channels)
 
     def __del__(self):
         for denoise_state in self.denoise_states:
@@ -69,9 +66,7 @@ class RNNoise:
     def reset(self):
         if self.sample_rate != 48000:
             self.rs = soxr.ResampleStream(48000, self.sample_rate, self.channels)
-        self.queue = FrameQueue(
-            self.frame_size_samples, self.sample_rate, self.channels
-        )
+        self.queue = FrameQueue(self.frame_size_samples, self.sample_rate, self.channels)
 
     def process_frame(self, frame, last):
         frame_size = len(frame)

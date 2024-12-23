@@ -1,6 +1,6 @@
 import click
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 import soundfile as sf
 
 from pyrnnoise import RNNoise
