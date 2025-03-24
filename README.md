@@ -11,4 +11,5 @@ $ denoise in.wav out.wav --plot
 $ git submodule update --init
 $ cmake -B pyrnnoise/build -DCMAKE_BUILD_TYPE=Release
 $ cmake --build pyrnnoise/build --target install
+$ pip install -e .
 ```
