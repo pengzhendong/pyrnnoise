@@ -1,4 +1,3 @@
+audiolab
 numpy
-soundfile
-soxr
 tqdm
