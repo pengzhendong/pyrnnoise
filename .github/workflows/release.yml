@@ -30,13 +30,16 @@ jobs:
           cmake --build ${{runner.workspace}}/build --target install --parallel --config Release
 
       - name: Publish
+        shell: bash
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
         run: |
           echo ${{ inputs.version }} > VERSION
-          python -m venv .venv
-          source .venv/bin/activate
+          if [[ "$RUNNER_OS" != "Windows" ]]; then
+            python -m venv .venv
+            source .venv/bin/activate
+          fi
           python -m pip install -U setuptools wheel
           python setup.py bdist_wheel
           python -m pip install -U twine
