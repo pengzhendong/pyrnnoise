@@ -1,7 +1,7 @@
 import click
 import matplotlib.pyplot as plt
 import numpy as np
-from audiolab import filters, info, load_audio
+from audiolab import info, load_audio
 
 from pyrnnoise import RNNoise
 
@@ -18,7 +18,7 @@ def main(in_wav, out_wav, plot):
     speech_probs = np.concatenate(speech_probs, axis=1)
 
     if plot:
-        audio, rate = load_audio(in_wav, filters=[filters.aformat(sample_fmts="flt")])
+        audio, rate = load_audio(in_wav, dtype=np.int16)
         channels = audio.shape[0]
         x1 = np.arange(0, audio.shape[1]) / rate
         x2 = [i / 100 for i in range(0, speech_probs.shape[1])]
