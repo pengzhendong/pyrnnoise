@@ -12,10 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from functools import partial
-
 import numpy as np
-from audiolab import AudioGraph, Reader, Writer, filters
+from audiolab import Reader, Writer
+from audiolab.av import AudioGraph, aformat
 from tqdm import tqdm
 
 from .librnnoise import FRAME_SIZE, FRAME_SIZE_MS, SAMPLE_RATE, create, destroy, process_frame
@@ -26,7 +25,7 @@ class RNNoise:
         self.sample_rate = sample_rate
         self.channels = None
         self.denoise_states = None
-        self.format = None
+        self.dtype = None
         self._in_graph = None
         self._out_graph = None
 
@@ -43,12 +42,11 @@ class RNNoise:
     @property
     def in_graph(self):
         if self._in_graph is None:
-            aformat = partial(filters.aformat, sample_fmts="s16", channel_layouts=self.layout)
             self._in_graph = AudioGraph(
                 rate=self.sample_rate,
-                format=self.format,
+                dtype=self.dtype,
                 layout=self.layout,
-                filters=[aformat(sample_rates=SAMPLE_RATE)],
+                filters=[aformat(np.int16, SAMPLE_RATE)],
                 frame_size=FRAME_SIZE,
             )
         return self._in_graph
@@ -56,12 +54,11 @@ class RNNoise:
     @property
     def out_graph(self):
         if self._out_graph is None:
-            aformat = partial(filters.aformat, sample_fmts="s16", channel_layouts=self.layout)
             self._out_graph = AudioGraph(
                 rate=SAMPLE_RATE,
-                format="s16",
+                dtype=np.int16,
                 layout=self.layout,
-                filters=[aformat(sample_rates=self.sample_rate)],
+                filters=[aformat(np.int16, self.sample_rate)],
             )
         return self._out_graph
 
@@ -84,27 +81,18 @@ class RNNoise:
         chunk = np.atleast_2d(chunk)
         # [num_channels, num_samples]
         self.channels = chunk.shape[0]
-        assert chunk.dtype in (np.float32, np.float64, np.int16)
-        self.format = "s16" if chunk.dtype == np.int16 else "flt"
+        self.dtype = chunk.dtype
         self.in_graph.push(chunk)
         frames = [frame for frame, _ in self.in_graph.pull(partial)]
         for idx, frame in enumerate(frames):
             yield self.process_frame(frame, partial and (idx == len(frames) - 1))
 
     def process_wav(self, in_path, out_path):
-        reader = Reader(in_path, frame_size_ms=FRAME_SIZE_MS)
-        writer = Writer(out_path, reader.codec, reader.rate)
-        progress_bar = tqdm(
-            total=reader.num_frames,
-            desc="Denoising",
-            unit="frames",
-            bar_format="{l_bar}{bar}{r_bar} | {percentage:.2f}%",
-        )
-
-        for idx, (frame, _) in enumerate(reader):
+        reader = Reader(in_path, dtype=np.int16, frame_size_ms=FRAME_SIZE_MS)
+        writer = Writer(out_path, reader.rate, reader.codec, layout=reader.layout)
+        for idx, (frame, _) in tqdm(enumerate(reader), desc="Denoising", total=reader.num_frames, unit="frames"):
             partial = idx == reader.num_frames - 1
             for speech_prob, frame in self.process_chunk(frame, partial):
                 writer.write(frame)
-                progress_bar.update(1)
                 yield speech_prob
         writer.close()

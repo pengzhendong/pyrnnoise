@@ -71,7 +71,7 @@ def process_mono_frame(state: ctypes.c_void_p, frame: np.ndarray) -> tuple[np.nd
 def process_frame(
     states: Union[ctypes.c_void_p, List[ctypes.c_void_p]], frame: np.ndarray
 ) -> tuple[np.ndarray, ctypes.c_float]:
-    if frame.ndim == 1 or (frame.ndim == 2 and frame.shape[0] == 1):
+    if frame.ndim == 1:
         return process_mono_frame(states, frame)
     else:
         # [num_channels, num_samples]
