@@ -1,3 +1,5 @@
 audiolab
+click
+matplotlib
 numpy
 tqdm

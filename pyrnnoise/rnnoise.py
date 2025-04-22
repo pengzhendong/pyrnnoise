@@ -79,4 +79,4 @@ def process_frame(
         assert len(states) == frame.shape[0]
         processed = [process_mono_frame(state, mono_frame) for state, mono_frame in zip(states, frame)]
     frames, speech_probs = zip(*processed)
-    return np.row_stack(frames), np.row_stack(speech_probs)
+    return np.vstack(frames), np.vstack(speech_probs)

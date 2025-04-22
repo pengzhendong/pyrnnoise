@@ -17,7 +17,7 @@ from audiolab import Reader, Writer
 from audiolab.av import AudioGraph, aformat
 from tqdm import tqdm
 
-from .librnnoise import FRAME_SIZE, FRAME_SIZE_MS, SAMPLE_RATE, create, destroy, process_frame
+from .rnnoise import FRAME_SIZE, FRAME_SIZE_MS, SAMPLE_RATE, create, destroy, process_frame
 
 
 class RNNoise:
