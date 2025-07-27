@@ -13,7 +13,7 @@ from pyrnnoise import RNNoise
 def main(in_wav, out_wav, plot):
     denoiser = RNNoise(info(in_wav).rate)
     speech_probs = []
-    for speech_prob in denoiser.process_wav(in_wav, out_wav):
+    for speech_prob in denoiser.denoise_wav(in_wav, out_wav):
         speech_probs.append(speech_prob)
     speech_probs = np.concatenate(speech_probs, axis=1)
 

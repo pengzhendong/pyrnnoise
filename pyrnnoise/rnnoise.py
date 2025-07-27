@@ -54,7 +54,7 @@ def destroy(state: ctypes.c_void_p):
     lib.rnnoise_destroy(state)
 
 
-def process_mono_frame(state: ctypes.c_void_p, frame: np.ndarray) -> tuple[np.ndarray, ctypes.c_float]:
+def denoise_mono_frame(state: ctypes.c_void_p, frame: np.ndarray) -> tuple[np.ndarray, ctypes.c_float]:
     if frame.dtype in (np.float32, np.float64) and -1 <= frame.all() <= 1:
         frame = (frame * 32767).astype(DTYPE)
     assert frame.dtype == DTYPE
@@ -68,15 +68,15 @@ def process_mono_frame(state: ctypes.c_void_p, frame: np.ndarray) -> tuple[np.nd
     return frame.astype(DTYPE)[:frame_size], speech_prob
 
 
-def process_frame(
+def denoise_frame(
     states: Union[ctypes.c_void_p, List[ctypes.c_void_p]], frame: np.ndarray
 ) -> tuple[np.ndarray, ctypes.c_float]:
     if frame.ndim == 1:
-        return process_mono_frame(states, frame)
+        return denoise_mono_frame(states, frame)
     else:
         # [num_channels, num_samples]
         assert frame.ndim == 2
         assert len(states) == frame.shape[0]
-        processed = [process_mono_frame(state, mono_frame) for state, mono_frame in zip(states, frame)]
+        processed = [denoise_mono_frame(state, mono_frame) for state, mono_frame in zip(states, frame)]
     frames, speech_probs = zip(*processed)
     return np.vstack(frames), np.vstack(speech_probs)

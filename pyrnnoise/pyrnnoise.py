@@ -17,7 +17,7 @@ from audiolab import Reader, Writer
 from audiolab.av import AudioGraph, aformat
 from tqdm import tqdm
 
-from .rnnoise import FRAME_SIZE, FRAME_SIZE_MS, SAMPLE_RATE, create, destroy, process_frame
+from pyrnnoise.rnnoise import FRAME_SIZE, FRAME_SIZE_MS, SAMPLE_RATE, create, destroy, process_frame
 
 
 class RNNoise:
@@ -68,7 +68,7 @@ class RNNoise:
         if self.sample_rate != SAMPLE_RATE:
             self._out_graph = None
 
-    def process_frame(self, frame: np.ndarray, partial: bool = False):
+    def denoise_frame(self, frame: np.ndarray, partial: bool = False):
         if self.denoise_states is None:
             self.denoise_states = [create() for _ in range(self.channels)]
         denoised_frame, speech_probs = process_frame(self.denoise_states, frame)
@@ -77,7 +77,7 @@ class RNNoise:
             denoised_frame = np.concatenate([frame for frame, _ in self.out_graph.pull(partial)], axis=1)
         return speech_probs, denoised_frame
 
-    def process_chunk(self, chunk: np.ndarray, partial: bool = False):
+    def denoise_chunk(self, chunk: np.ndarray, partial: bool = False):
         chunk = np.atleast_2d(chunk)
         # [num_channels, num_samples]
         self.channels = chunk.shape[0]
@@ -85,14 +85,14 @@ class RNNoise:
         self.in_graph.push(chunk)
         frames = [frame for frame, _ in self.in_graph.pull(partial)]
         for idx, frame in enumerate(frames):
-            yield self.process_frame(frame, partial and (idx == len(frames) - 1))
+            yield self.denoise_frame(frame, partial and (idx == len(frames) - 1))
 
-    def process_wav(self, in_path, out_path):
+    def denoise_wav(self, in_path, out_path):
         reader = Reader(in_path, dtype=np.int16, frame_size_ms=FRAME_SIZE_MS)
         writer = Writer(out_path, reader.rate, reader.codec, layout=reader.layout)
         for idx, (frame, _) in tqdm(enumerate(reader), desc="Denoising", total=reader.num_frames, unit="frames"):
             partial = idx == reader.num_frames - 1
-            for speech_prob, frame in self.process_chunk(frame, partial):
+            for speech_prob, frame in self.denoise_chunk(frame, partial):
                 writer.write(frame)
                 yield speech_prob
         writer.close()
