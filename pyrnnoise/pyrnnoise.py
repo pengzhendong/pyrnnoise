@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Iterator, Tuple
+
 import numpy as np
 from audiolab import Reader, Writer
 from audiolab.av import AudioGraph, aformat
@@ -68,7 +70,16 @@ class RNNoise:
         if self.sample_rate != SAMPLE_RATE:
             self._out_graph = None
 
-    def denoise_frame(self, frame: np.ndarray, partial: bool = False):
+    def denoise_frame(self, frame: np.ndarray, partial: bool = False) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Denoise a single frame of audio data.
+
+        Args:
+            frame (np.ndarray): Input audio frame, can be 1D (mono) or 2D (stereo).
+            partial (bool): Whether this is the last frame of a chunk.
+        Returns:
+            Tuple[np.ndarray, np.ndarray]: Speech probability and denoised audio frame.
+        """
         if self.denoise_states is None:
             self.denoise_states = [create() for _ in range(self.channels)]
         denoised_frame, speech_probs = process_frame(self.denoise_states, frame)
@@ -77,7 +88,16 @@ class RNNoise:
             denoised_frame = np.concatenate([frame for frame, _ in self.out_graph.pull(partial)], axis=1)
         return speech_probs, denoised_frame
 
-    def denoise_chunk(self, chunk: np.ndarray, partial: bool = False):
+    def denoise_chunk(self, chunk: np.ndarray, partial: bool = False) -> Iterator[Tuple[np.ndarray, np.ndarray]]:
+        """
+        Denoise a chunk of audio data.
+
+        Args:
+            chunk (np.ndarray): Input audio chunk, can be 1D (mono) or 2D (stereo).
+            partial (bool): Whether this is the last chunk of a file.
+        Yields:
+            Tuple[np.ndarray, np.ndarray]: Speech probability and denoised audio frame.
+        """
         chunk = np.atleast_2d(chunk)
         # [num_channels, num_samples]
         self.channels = chunk.shape[0]
@@ -88,6 +108,15 @@ class RNNoise:
             yield self.denoise_frame(frame, partial and (idx == len(frames) - 1))
 
     def denoise_wav(self, in_path, out_path):
+        """
+        Denoise a WAV file and save the output.
+
+        Args:
+            in_path (str): Path to the input WAV file.
+            out_path (str): Path to save the denoised WAV file.
+        Yields:
+            float: Speech probability for each processed frame.
+        """
         reader = Reader(in_path, dtype=np.int16, frame_size_ms=FRAME_SIZE_MS)
         writer = Writer(out_path, reader.rate, reader.codec, layout=reader.layout)
         for idx, (frame, _) in tqdm(enumerate(reader), desc="Denoising", total=reader.num_frames, unit="frames"):

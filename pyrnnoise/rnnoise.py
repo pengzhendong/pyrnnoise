@@ -15,7 +15,7 @@
 import ctypes
 import os
 import platform
-from typing import List, Union
+from typing import List, Tuple, Union
 
 import numpy as np
 
@@ -47,14 +47,35 @@ DTYPE = np.int16
 
 
 def create() -> ctypes.c_void_p:
+    """
+    Create a new RNNoise denoising state.
+
+    Returns:
+        ctypes.c_void_p: Pointer to the RNNoise denoising state.
+    """
     return lib.rnnoise_create(None)
 
 
 def destroy(state: ctypes.c_void_p):
+    """
+    Destroy an RNNoise denoising state.
+
+    Args:
+        state (ctypes.c_void_p): Pointer to the RNNoise denoising state to destroy.
+    """
     lib.rnnoise_destroy(state)
 
 
-def denoise_mono_frame(state: ctypes.c_void_p, frame: np.ndarray) -> tuple[np.ndarray, ctypes.c_float]:
+def process_mono_frame(state: ctypes.c_void_p, frame: np.ndarray) -> Tuple[np.ndarray, ctypes.c_float]:
+    """
+    Process a single frame of audio data with RNNoise.
+
+    Args:
+        state (ctypes.c_void_p): Pointer to the RNNoise denoising state.
+        frame (np.ndarray): Input audio frame, should be a 1D numpy array.
+    Returns:
+        Tuple[np.ndarray, ctypes.c_float]: Processed audio frame and speech probability.
+    """
     if frame.dtype in (np.float32, np.float64) and -1 <= frame.all() <= 1:
         frame = (frame * 32767).astype(DTYPE)
     assert frame.dtype == DTYPE
@@ -68,15 +89,24 @@ def denoise_mono_frame(state: ctypes.c_void_p, frame: np.ndarray) -> tuple[np.nd
     return frame.astype(DTYPE)[:frame_size], speech_prob
 
 
-def denoise_frame(
+def process_frame(
     states: Union[ctypes.c_void_p, List[ctypes.c_void_p]], frame: np.ndarray
-) -> tuple[np.ndarray, ctypes.c_float]:
+) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Process a frame of audio data with RNNoise, supporting both mono and stereo.
+
+    Args:
+        states (Union[ctypes.c_void_p, List[ctypes.c_void_p]]): Pointer to the RNNoise denoising state or a list of states for each channel.
+        frame (np.ndarray): Input audio frame, can be 1D (mono) or 2D (stereo).
+    Returns:
+        Tuple[np.ndarray, np.ndarray]: Processed audio frame and speech probabilities.
+    """
     if frame.ndim == 1:
-        return denoise_mono_frame(states, frame)
+        return process_mono_frame(states, frame)
     else:
         # [num_channels, num_samples]
         assert frame.ndim == 2
         assert len(states) == frame.shape[0]
-        processed = [denoise_mono_frame(state, mono_frame) for state, mono_frame in zip(states, frame)]
+        processed = [process_mono_frame(state, mono_frame) for state, mono_frame in zip(states, frame)]
     frames, speech_probs = zip(*processed)
     return np.vstack(frames), np.vstack(speech_probs)
