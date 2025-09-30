@@ -12,6 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .pyrnnoise import RNNoise
+from pyrnnoise.pyrnnoise import RNNoise
 
 __all__ = ["RNNoise"]

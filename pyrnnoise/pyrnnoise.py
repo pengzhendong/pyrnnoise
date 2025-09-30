@@ -86,6 +86,8 @@ class RNNoise:
         if self.sample_rate != SAMPLE_RATE:
             self.out_graph.push(denoised_frame)
             denoised_frame = np.concatenate([frame for frame, _ in self.out_graph.pull(partial)], axis=1)
+        if partial:
+            self.reset()
         return speech_probs, denoised_frame
 
     def denoise_chunk(self, chunk: np.ndarray, partial: bool = False) -> Iterator[Tuple[np.ndarray, np.ndarray]]:
