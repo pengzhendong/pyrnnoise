@@ -48,7 +48,7 @@ class RNNoise:
                 rate=self.sample_rate,
                 dtype=self.dtype,
                 layout=self.layout,
-                filters=[aformat(np.int16, SAMPLE_RATE)],
+                filters=[aformat(dtype=np.int16, rate=SAMPLE_RATE)],
                 frame_size=FRAME_SIZE,
             )
         return self._in_graph
@@ -60,7 +60,7 @@ class RNNoise:
                 rate=SAMPLE_RATE,
                 dtype=np.int16,
                 layout=self.layout,
-                filters=[aformat(np.int16, self.sample_rate)],
+                filters=[aformat(dtype=np.int16, rate=self.sample_rate)],
             )
         return self._out_graph
 
