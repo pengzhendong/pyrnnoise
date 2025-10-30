@@ -76,7 +76,7 @@ def process_mono_frame(state: ctypes.c_void_p, frame: np.ndarray) -> Tuple[np.nd
     Returns:
         Tuple[np.ndarray, ctypes.c_float]: Processed audio frame and speech probability.
     """
-    if frame.dtype in (np.float32, np.float64) and -1 <= frame.all() <= 1:
+    if frame.dtype in (np.float32, np.float64) and frame.min() >= -1.0 and frame.max() <= 1.0:
         frame = (frame * 32767).astype(DTYPE)
     assert frame.dtype == DTYPE
     frame = frame.astype(np.float32)
