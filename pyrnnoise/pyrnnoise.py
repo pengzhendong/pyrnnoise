@@ -12,14 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import math
 from typing import Iterator, Tuple
 
 import numpy as np
 from audiolab import Reader, Writer
-from audiolab.av import AudioGraph, aformat
+from audiolab.av import Graph, aformat
 from tqdm import tqdm
 
-from pyrnnoise.rnnoise import FRAME_SIZE, FRAME_SIZE_MS, SAMPLE_RATE, create, destroy, process_frame
+from pyrnnoise.rnnoise import FRAME_SIZE, SAMPLE_RATE, create, destroy, process_frame
 
 
 class RNNoise:
@@ -37,18 +38,13 @@ class RNNoise:
                 destroy(denoise_state)
 
     @property
-    def layout(self):
-        assert self.channels in (1, 2)
-        return "mono" if self.channels == 1 else "stereo"
-
-    @property
     def in_graph(self):
         if self._in_graph is None:
-            self._in_graph = AudioGraph(
+            self._in_graph = Graph(
                 rate=self.sample_rate,
                 dtype=self.dtype,
-                layout=self.layout,
-                filters=[aformat(dtype=np.int16, rate=SAMPLE_RATE)],
+                channels=self.channels,
+                filters=[aformat(np.int16, SAMPLE_RATE)],
                 frame_size=FRAME_SIZE,
             )
         return self._in_graph
@@ -56,11 +52,11 @@ class RNNoise:
     @property
     def out_graph(self):
         if self._out_graph is None:
-            self._out_graph = AudioGraph(
+            self._out_graph = Graph(
                 rate=SAMPLE_RATE,
                 dtype=np.int16,
-                layout=self.layout,
-                filters=[aformat(dtype=np.int16, rate=self.sample_rate)],
+                channels=self.channels,
+                filters=[aformat(np.int16, self.sample_rate)],
             )
         return self._out_graph
 
@@ -119,10 +115,11 @@ class RNNoise:
         Yields:
             float: Speech probability for each processed frame.
         """
-        reader = Reader(in_path, dtype=np.int16, frame_size_ms=FRAME_SIZE_MS)
-        writer = Writer(out_path, reader.rate, reader.codec, layout=reader.layout)
-        for idx, (frame, _) in tqdm(enumerate(reader), desc="Denoising", total=reader.num_frames, unit="frames"):
-            partial = idx == reader.num_frames - 1
+        reader = Reader(in_path, dtype=np.int16, frame_size=FRAME_SIZE)
+        writer = Writer(out_path, reader.rate)
+        num_frames = math.ceil(reader.num_frames / FRAME_SIZE)
+        for idx, (frame, _) in tqdm(enumerate(reader), desc="Denoising", total=num_frames, unit="frames"):
+            partial = idx == num_frames - 1
             for speech_prob, frame in self.denoise_chunk(frame, partial):
                 writer.write(frame)
                 yield speech_prob
