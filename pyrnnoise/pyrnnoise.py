@@ -61,7 +61,10 @@ class RNNoise:
         return self._out_graph
 
     def reset(self):
-        self.denoise_states = None
+        if self.denoise_states is not None:
+            for denoise_state in self.denoise_states:
+                destroy(denoise_state)
+            self.denoise_states = None
         self._in_graph = None
         if self.sample_rate != SAMPLE_RATE:
             self._out_graph = None
