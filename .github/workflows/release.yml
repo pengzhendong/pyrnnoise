@@ -34,8 +34,9 @@ jobs:
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+          RELEASE_VERSION: ${{ inputs.version }}
         run: |
-          echo ${{ inputs.version }} > VERSION
+          echo "$RELEASE_VERSION" > VERSION
           if [[ "$RUNNER_OS" != "Windows" ]]; then
             python -m venv .venv
             source .venv/bin/activate
