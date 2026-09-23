@@ -1,4 +1,4 @@
-audiolab
+audiolab>=0.5.2
 click
 matplotlib
 numpy
