@@ -11,7 +11,7 @@ from pyrnnoise import RNNoise
 @click.argument("out_wav", type=click.Path(file_okay=True))
 @click.option("--plot/--no-plot", default=False, help="Plot the vad probabilities")
 def main(in_wav, out_wav, plot):
-    denoiser = RNNoise(info(in_wav).rate)
+    denoiser = RNNoise(info(in_wav).sample_rate)
     speech_probs = []
     for speech_prob in denoiser.denoise_wav(in_wav, out_wav):
         speech_probs.append(speech_prob)
