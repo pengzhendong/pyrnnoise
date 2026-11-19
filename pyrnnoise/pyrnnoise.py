@@ -119,7 +119,7 @@ class RNNoise:
             float: Speech probability for each processed frame.
         """
         reader = Reader(in_path, dtype=np.int16, frame_size=FRAME_SIZE)
-        writer = Writer(out_path, reader.rate)
+        writer = Writer(out_path, reader.sample_rate)
         num_frames = math.ceil(reader.num_frames / FRAME_SIZE)
         for idx, (frame, _) in tqdm(enumerate(reader), desc="Denoising", total=num_frames, unit="frames"):
             partial = idx == num_frames - 1
